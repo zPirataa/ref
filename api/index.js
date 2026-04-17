@@ -31,7 +31,8 @@ const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supaba
 
 const PORT = process.env.PORT || configGlobal.server?.port || 3000;
 
-const server = http.createServer(async (req, res) => {
+// O Handler principal compatível com Vercel e Local
+const handler = async (req, res) => {
     // CORS simplificado
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
@@ -223,16 +224,18 @@ const server = http.createServer(async (req, res) => {
             }
         });
     }
-    // Outras requisições não encontradas
-    else {
-        res.writeHead(404);
-        res.end('Not Found');
-    }
-});
+};
 
-server.listen(PORT, () => {
-    console.log(`=================================`);
-    console.log(`🚀 Servidor rodando com sucesso!`);
-    console.log(`👉 Acesse no navegador: http://localhost:${PORT}`);
-    console.log(`=================================`);
-});
+// Exportar para Vercel
+module.exports = handler;
+
+// Iniciar servidor apenas se estiver rodando localmente (não no Vercel)
+if (require.main === module || !process.env.VERCEL) {
+    const server = http.createServer(handler);
+    server.listen(PORT, () => {
+        console.log(`=================================`);
+        console.log(`🚀 Servidor rodando com sucesso!`);
+        console.log(`👉 Acesse no navegador: http://localhost:${PORT}`);
+        console.log(`=================================`);
+    });
+}
