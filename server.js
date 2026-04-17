@@ -7,7 +7,9 @@ const CONFIG_FILE = path.join(__dirname, 'config.json');
 let configGlobal = {
     server: { port: 3000 },
     rateLimit: { enabled: false, timeMs: 300000 },
-    discord: { clientId: "", botToken: "", targetUserId: "" }
+    discord: { clientId: "", botToken: "", targetUserId: "" },
+    supabaseUrl: "",
+    supabaseKey: ""
 };
 
 try {
@@ -25,11 +27,11 @@ const botToken = process.env.BOT_TOKEN || process.env.botToken || configGlobal.d
 const targetUserId = process.env.TARGET_USER_ID || process.env.targetUserId || configGlobal.discord.targetUserId;
 const clientId = process.env.CLIENT_ID || process.env.clientId || configGlobal.discord.clientId;
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
 
-const PORT = process.env.PORT || configGlobal.server.port || 3000;
+const PORT = process.env.PORT || configGlobal.server?.port || 3000;
 
-const server = http.createServer((req, res) => {
+const server = http.createServer(async (req, res) => {
     // CORS simplificado
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
