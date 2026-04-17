@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avaliações - Dark Mode</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-color: #000000;
+            --surface-color: #0a0a0a;
+            --border-color: #262626;
+            --text-primary: #ffffff;
+            --text-secondary: #888888;
+            --discord-color: #5865F2;
+            --danger-color: #ff0015;
+            --radius: 12px;
+            --transition: all 0.2s ease;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-image: radial-gradient(circle at 50% 0%, #151515 0%, #000000 80%);
+        }
+
+        /* --- Layout de Colunas (Form + Discord Portal) --- */
+        .top-section {
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 3rem;
+            align-items: flex-start;
+            flex-wrap: wrap; /* Responsivo para mobile */
+        }
+        
+        @media (max-width: 900px) {
+            .top-section { flex-direction: column; align-items: center; }
+            .form-card, .dc-profile-card { max-width: 100% !important; }
+        }
+
+        .form-side { flex: 1.3; width: 100%; }
+        .profile-side { flex: 0.7; width: 100%; min-width: 300px; max-width: 380px; }
+
+        /* --- Main --- */
+        main { max-width: 1100px; width: 100%; margin: 0 auto; padding: 4rem 1.5rem; flex: 1; display: flex; flex-direction: column; }
+
+        /* --- Stats --- */
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; max-width: 700px; margin: 0 auto; width: 100%; }
+        .stat-box {
+            background: var(--surface-color); border: 1px solid var(--border-color);
+            padding: 1.5rem; border-radius: var(--radius); text-align: center;
+        }
+        .stat-val { font-size: 2rem; font-weight: 700; color: #fff; }
+        .stat-lbl { font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; }
+
+        .form-card {
+            background: var(--surface-color); border: 1px solid var(--border-color);
+            padding: 2rem; border-radius: var(--radius);
+            width: 100%;
+        }
+
+        /* --- Discord Profile Card (Premium) --- */
+        .dc-profile-card {
+            background: #111214; 
+            border-radius: 16px; 
+            overflow: hidden; 
+            width: 100%;
+            display: flex; 
+            flex-direction: column;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .dc-profile-card:hover {
+            border-color: var(--discord-color);
+            box-shadow: 0 0 20px rgba(88, 101, 242, 0.2);
+        }
+        .dc-banner { 
+            height: 105px; 
+            background: #232428; 
+            background-size: cover; 
+            background-position: center; border-bottom: 1px solid rgba(0,0,0,0.2);
+        }
+        .dc-body { padding: 16px; position: relative; padding-top: 55px; }
+        .dc-avatar-container {
+            position: absolute; top: -45px; left: 16px;
+        }
+        .dc-avatar {
+            width: 80px; height: 80px; border-radius: 50%; 
+            border: 6px solid #111214; background: #232428; object-fit: cover;
+        }
+        .dc-status {
+            position: absolute; bottom: 5px; right: 2px;
+            width: 20px; height: 20px; border-radius: 50%;
+            border: 4px solid #111214; background: #3ba55d;
+        }
+        .dc-badges {
+            position: absolute; top: 12px; right: 16px;
+            display: flex; gap: 4px;
+        }
+        .dc-badge-item { 
+            width: 22px; height: 22px; 
+            background: #1e1f22; 
+            padding: 4px; 
+            border-radius: 4px;
+            box-sizing: content-box;
+            border: 1px solid rgba(255,255,255,0.02);
+            transition: transform 0.2s;
+        }
+        .dc-badge-item:hover { transform: scale(1.1); background: #2b2d31; }
+
+        .dc-info-box {
+            background: #18191c; border-radius: 8px; padding: 12px; margin-top: 12px;
+        }
+        .dc-nick { font-weight: 700; font-size: 1.2rem; color: #fff; margin-bottom: 2px; }
+        .dc-user { font-size: 0.85rem; color: #b5bac1; margin-bottom: 12px; display: block;}
+        
+        .dc-section-title {
+            text-transform: uppercase; font-size: 0.7rem; font-weight: 800; color: #b5bac1;
+            letter-spacing: 0.5px; margin-bottom: 8px;
+        }
+        .dc-about { font-size: 0.85rem; color: #dbdee1; line-height: 1.4; white-space: pre-wrap; margin-bottom: 16px;}
+        .dc-member-since { font-size: 0.8rem; color: #b5bac1; }
+        
+        /* Inputs */
+        .input-group { margin-bottom: 1.5rem; }
+        .input-group label { display: block; margin-bottom: 0.5rem; font-size: 0.9rem; color: var(--text-secondary); }
+        
+        input[type="text"], textarea {
+            width: 100%; background: #000; border: 1px solid var(--border-color);
+            color: #fff; padding: 12px; border-radius: 8px; outline: none; font-size: 1rem;
+            transition: var(--transition);
+        }
+        input[type="text"]:focus, textarea:focus { border-color: #555; box-shadow: 0 0 0 2px rgba(255,255,255,0.05); }
+        textarea { min-height: 100px; resize: vertical; margin-top: 5px; }
+
+        /* Star Rating */
+        .star-container { display: flex; gap: 8px; cursor: pointer; }
+        .star-icon {
+            width: 32px; height: 32px; fill: #333; transition: transform 0.2s, fill 0.2s;
+        }
+        .star-icon:hover { transform: scale(1.2); }
+        .star-icon.active { fill: #fff; filter: drop-shadow(0 0 5px rgba(255,255,255,0.5)); }
+
+        .submit-btn {
+            width: 100%; max-width: 300px; display: block; margin: 20px auto 0;
+            background: #fff; color: #000; border: none; padding: 14px;
+            font-weight: 600; border-radius: 8px; cursor: pointer;
+            transition: var(--transition);
+        }
+        .submit-btn:hover { background: #e0e0e0; box-shadow: 0 0 15px rgba(255,255,255,0.2); }
+
+        /* --- Reviews List (Marquee / Horizontal) --- */
+        .reviews-section-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; color: #fff; }
+        
+        .reviews-container {
+            overflow: hidden;
+            width: 100%;
+            position: relative;
+        }
+        
+        .reviews-list { 
+            display: flex;
+            gap: 1.5rem; 
+            flex-wrap: nowrap;
+            width: max-content; 
+        }
+
+        .reviews-container.drag-enabled {
+            overflow-x: auto;
+            scroll-behavior: auto;
+            cursor: grab;
+        }
+        .reviews-container.drag-enabled::-webkit-scrollbar { display: none; }
+        .reviews-container.drag-enabled.active { cursor: grabbing; }
+
+        .review-card {
+            background: var(--surface-color); border: 1px solid var(--border-color);
+            padding: 1.5rem; border-radius: var(--radius); display: flex; flex-direction: column; gap: 1rem; align-items: flex-start;
+            transition: var(--transition);
+            min-width: 260px; width: 260px; max-width: 260px; height: 210px;
+        }
+        .review-card:hover { border-color: #444; }
+        .rev-avatar { width: 45px; height: 45px; border-radius: 50%; background: #222; object-fit: cover;}
+        .rev-header { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+        .rev-user-area { display: flex; align-items: center; gap: 10px; }
+        .rev-content { flex: 1; width: 100%; display: flex; flex-direction: column; justify-content: space-between; }
+        .rev-name { font-weight: 600; font-size: 0.95rem; }
+        .rev-stars { display: flex; gap: 2px; }
+        .mini-star { width: 12px; height: 12px; fill: #333; }
+        .mini-star.filled { fill: #fff; }
+        .rev-text { 
+            color: #bbb; font-size: 0.9rem; line-height: 1.5; word-wrap: break-word;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+        }
+        .rev-date { font-size: 0.75rem; color: #555; margin-top: auto; }
+
+        /* Discord Login Button */
+        .discord-btn {
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            background-color: var(--discord-color); color: #fff; text-decoration: none;
+            padding: 14px 24px; border-radius: 8px; font-weight: 600; cursor: pointer;
+            transition: var(--transition); width: 100%; max-width: 300px; margin: 0 auto; border: none; font-size: 1rem;
+        }
+        .discord-btn:hover { background-color: #4752C4; box-shadow: 0 0 15px rgba(88, 101, 242, 0.4); }
+
+        /* Toast */
+        .toast {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px);
+            background: #fff; color: #000; padding: 14px 28px; border-radius: 50px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); transition: transform 0.3s; z-index: 999; font-weight: 500;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+
+        /* Custom Modal */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); backdrop-filter: blur(5px);
+            display: flex; align-items: center; justify-content: center; z-index: 1000;
+            opacity: 0; transition: opacity 0.2s ease; visibility: hidden;
+        }
+        .modal-overlay.show { opacity: 1; visibility: visible; }
+        .modal-content {
+            background: var(--surface-color); border: 1px solid var(--border-color);
+            padding: 24px; border-radius: var(--radius); width: 90%; max-width: 400px;
+            transform: translateY(20px); transition: transform 0.2s ease;
+        }
+        .modal-overlay.show .modal-content { transform: translateY(0); }
+        .btn-cancelar, .btn-apagar {
+            padding: 10px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; font-size: 0.9rem; transition: var(--transition);
+        }
+        .btn-cancelar { background: transparent; color: var(--text-primary); border: 1px solid var(--border-color); }
+        .btn-cancelar:hover { background: rgba(255,255,255,0.05); }
+        .btn-apagar { background: var(--danger-color); color: #fff; }
+        .btn-apagar:hover { opacity: 0.8; }
+
+        /* Music Widget */
+        .music-widget {
+            position: fixed; bottom: 30px; right: 30px; z-index: 900;
+            background: rgba(0,0,0,0.7); backdrop-filter: blur(15px);
+            border: 1px solid #1DB954; padding: 10px;
+            border-radius: 50px; display: flex; align-items: center; gap: 0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); color: #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            justify-content: center; overflow: hidden;
+        }
+        .music-widget:hover { background: rgba(0,0,0,0.9); border-color: #1DB954; padding: 10px 16px; gap: 12px; }
+        #music-play-btn { display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s; user-select: none; }
+        #music-play-btn:hover { transform: scale(1.1); filter: drop-shadow(0 0 5px rgba(255,255,255,0.8)); }
+        #music-play-btn.playing { filter: drop-shadow(0 0 5px #1DB954); color: #1DB954; }
+        #music-play-btn.playing svg { fill: #1DB954; }
+        
+        #volume-slider {
+            -webkit-appearance: none; width: 0; opacity: 0; height: 4px; border-radius: 2px;
+            background: linear-gradient(to right, #1DB954 100%, #555 100%); outline: none; cursor: pointer;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+        }
+        .music-widget:hover #volume-slider { width: 80px; opacity: 1; }
+        #volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none; width: 12px; height: 12px;
+            border-radius: 50%; background: #fff; cursor: pointer; transition: transform 0.2s;
+        }
+        #volume-slider:hover::-webkit-slider-thumb { transform: scale(1.2); }
+
+        #load-more-btn:hover { color: #fff !important; border-color: #555 !important; }
+    </style>
+</head>
+<body>
+    <main>
+        <div class="top-section">
+            <div class="form-side">
+                <!-- Stats no topo do form para contexto rápido -->
+                <div class="stats-grid" style="max-width: 100%; margin-bottom: 2rem;">
+                    <div class="stat-box">
+                        <div class="stat-val" id="total-count">0</div>
+                        <div class="stat-lbl">Avaliações</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-val"><span id="avg-score">0.0</span></div>
+                        <div class="stat-lbl">Média</div>
+                    </div>
+                </div>
+
+                <div class="form-card">
+                    <div id="login-section">
+                        <p style="text-align: center; color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.9rem;">
+                            Você precisa estar logado para enviar uma avaliação.
+                        </p>
+                        <!-- URL construida no JavaScript ali no final -->
+                        <a href="#" id="discord-login-btn" class="discord-btn">
+                            Entrar com Discord
+                        </a>
+                    </div>
+
+                    <div id="review-section" style="display: none;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem;">
+                            <div class="logged-user-preview" style="display: flex; align-items: center; gap: 12px; padding: 12px 18px; background: rgba(0,0,0,0.4); border-radius: 8px; border: 1px solid var(--border-color); min-width: 220px; width: max-content;">
+                                <img src="" id="logged-user-avatar" class="rev-avatar" alt="Avatar">
+                                <div>
+                                    <span id="logged-user-name" class="rev-name" style="display:block; line-height: 1.1; color: #fff;"></span>
+                                    <span id="logged-user-tag" style="font-size: 0.75rem; color: #888; display:block; margin-top:2px;"></span>
+                                </div>
+                            </div>
+                            <button type="button" onclick="logout()" style="background: transparent; border: 1px solid var(--border-color); color: var(--danger-color); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; transition: var(--transition);">Sair</button>
+                        </div>
+
+                        <div class="input-group">
+                            <label>Nota:</label>
+                            <div class="star-container" onmouseleave="resetRatingHover()">
+                                <svg class="star-icon" viewBox="0 0 24 24" onclick="setRating(1)" onmouseover="hoverRating(1)"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                                <svg class="star-icon" viewBox="0 0 24 24" onclick="setRating(2)" onmouseover="hoverRating(2)"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                                <svg class="star-icon" viewBox="0 0 24 24" onclick="setRating(3)" onmouseover="hoverRating(3)"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                                <svg class="star-icon" viewBox="0 0 24 24" onclick="setRating(4)" onmouseover="hoverRating(4)"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                                <svg class="star-icon" viewBox="0 0 24 24" onclick="setRating(5)" onmouseover="hoverRating(5)"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                            </div>
+                            <input type="hidden" id="rating-value" value="0">
+                        </div>
+
+                        <div class="input-group">
+                            <label>Comentário</label>
+                            <textarea id="review-text" placeholder="Escreva sua avaliação..." style="min-height: 120px;"></textarea>
+                        </div>
+
+                        <button type="button" class="submit-btn" id="submit-btn" onclick="submitReview()">Enviar Avaliação</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Novo Card de Perfil do Discord -->
+            <div class="profile-side">
+                <div class="dc-profile-card">
+                    <div class="dc-banner" id="p-banner"></div>
+                    <div class="dc-body">
+                        <div class="dc-avatar-container">
+                            <img src="" id="p-avatar" class="dc-avatar" alt="Avatar">
+                            <div class="dc-status"></div>
+                        </div>
+                        <div class="dc-badges" id="p-badges">
+                            <!-- Injetado via JS -->
+                        </div>
+                        
+                        <div class="dc-info-box">
+                            <h2 class="dc-nick" id="p-name">Carregando...</h2>
+                            <span class="dc-user" id="p-tag">@...</span>
+
+                            <div class="dc-section-title">About Me</div>
+                            <div class="dc-about" id="p-bio">...</div>
+
+                            <div class="dc-section-title">Member Since</div>
+                            <div class="dc-member-since" id="p-since">...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lista de Avaliações -->
+        <div class="reviews-header" style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 1rem;">
+            <h3 class="reviews-section-title" style="margin-bottom: 0;">Histórico de Avaliações</h3>
+        </div>
+        <div class="reviews-container drag-enabled" id="reviews-container-box">
+            <div id="reviews-list" class="reviews-list">
+                <p style="color: #444; text-align: center; font-style: italic; width: 100%;">Nenhuma avaliação ainda.</p>
+            </div>
+        </div>
+
+    </main>
+        <!-- Footer -->
+        <footer style="margin-top: 4rem; text-align: center; font-size: 0.9rem; color: #555; padding-bottom: 2rem;">
+            &copy; 2026 Todos os direitos reservados. <br>
+            <span style="font-size: 0.8rem; opacity: 0.8;">Feito por <a href="https://discord.com/users/530096206240808960" target="_blank" style="color: var(--discord-color, #7289DA); text-decoration: none; font-weight: 600; cursor: pointer; transition: 0.2s;">snow</a></span>
+        </footer>
+
+    <div id="toast" class="toast">Mensagem</div>
+    <!-- Confirm Apagar Modal -->
+    <div id="custom-confirm-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 10px; font-weight: 600;">Atenção</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 25px; font-size: 0.95rem;">Tem certeza que deseja apagar esta avaliação?</p>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button onclick="closeConfirmModal()" class="btn-cancelar">Cancelar</button>
+                <button id="btn-confirm-delete" class="btn-apagar">Apagar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Music Player Automático -->
+    <div id="yt-player-box" style="position: absolute; top: -9999px; left: -9999px; visibility: hidden;"></div>
+    <div id="music-widget" class="music-widget" style="display: none;">
+        <span id="music-play-btn" onclick="toggleMusic()" title="Pausar / Tocar" style="display: flex; align-items: center; justify-content: center;"><svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
+        <input type="range" id="volume-slider" min="0" max="100" value="100" title="Volume" oninput="changeVolume(this.value)">
+    </div>
+
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script>
+        // --- Estado Global ---
+        let currentRating = 0;
+        let reviews = [];
+        let userAccessToken = localStorage.getItem('discord_access_token');
+        let loggedUserId = null;
+        let renderedCount = 0;
+
+        let ytPlayer = null;
+        let ytVideoId = null;
+        let isMusicPlaying = false;
+        
+        function extractVideoID(url) {
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const match = url.match(regExp);
+            return (match && match[2].length === 11) ? match[2] : null;
+        }
+
+        function onYouTubeIframeAPIReady() {
+            if (ytVideoId && !ytPlayer) {
+                createYoutubePlayer();
+            }
+        }
+
+        function createYoutubePlayer() {
+            ytPlayer = new YT.Player('yt-player-box', {
+                height: '10', width: '10', videoId: ytVideoId,
+                playerVars: { 'autoplay': 0, 'loop': 1, 'playlist': ytVideoId, 'controls': 0 },
+                events: {
+                    'onReady': (event) => { /* Não toca automaticamente */ },
+                    'onStateChange': (event) => {
+                        const btn = document.getElementById('music-play-btn');
+                        if (event.data === YT.PlayerState.PLAYING) {
+                            isMusicPlaying = true;
+                            btn.innerHTML = '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
+                            btn.classList.add('playing');
+                            const vol = document.getElementById('volume-slider').value;
+                            ytPlayer.setVolume(vol);
+                            document.getElementById('volume-slider').style.background = `linear-gradient(to right, #1DB954 ${vol}%, #555 ${vol}%)`;
+                        } else {
+                            isMusicPlaying = false;
+                            btn.innerHTML = '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+                            btn.classList.remove('playing');
+                        }
+                    }
+                }
+            });
+        }
+
+        function toggleMusic() {
+            if (!ytPlayer) return;
+            if (isMusicPlaying) {
+                ytPlayer.pauseVideo();
+            } else {
+                ytPlayer.playVideo();
+            }
+        }
+
+        function changeVolume(value) {
+            if (ytPlayer && ytPlayer.setVolume) {
+                ytPlayer.setVolume(value);
+            }
+            document.getElementById('volume-slider').style.background = `linear-gradient(to right, #1DB954 ${value}%, #555 ${value}%)`;
+        }
+
+        // Configuração Dinâmica
+        let CLIENT_ID = ""; 
+        let TARGET_USER_ID = "";
+        const REDIRECT_URI = encodeURIComponent(window.location.origin);
+
+        async function applyConfig() {
+            try {
+                const res = await fetch('/api/config');
+                if (!res.ok) return;
+                const config = await res.json();
+                
+                window.appConfig = config;
+                CLIENT_ID = config.clientId;
+                TARGET_USER_ID = config.targetUserId;
+                
+                // Aplicar cores no CSS :root
+                if (config.theme) {
+                    const r = document.documentElement;
+                    if (config.theme.colors) {
+                        if (config.theme.colors.bgColor) r.style.setProperty('--bg-color', config.theme.colors.bgColor);
+                        if (config.theme.colors.surfaceColor) r.style.setProperty('--surface-color', config.theme.colors.surfaceColor);
+                        if (config.theme.colors.borderColor) r.style.setProperty('--border-color', config.theme.colors.borderColor);
+                        if (config.theme.colors.textPrimary) r.style.setProperty('--text-primary', config.theme.colors.textPrimary);
+                        if (config.theme.colors.textSecondary) r.style.setProperty('--text-secondary', config.theme.colors.textSecondary);
+                        if (config.theme.colors.discordColor) r.style.setProperty('--discord-color', config.theme.colors.discordColor);
+                        if (config.theme.colors.dangerColor) r.style.setProperty('--danger-color', config.theme.colors.dangerColor);
+                    }
+                    if (config.theme.backgroundImage && config.theme.backgroundImage.trim() !== '') {
+                        document.body.style.backgroundImage = `url('${config.theme.backgroundImage}')`;
+                        document.body.style.backgroundSize = 'cover';
+                        document.body.style.backgroundPosition = 'center';
+                        document.body.style.backgroundAttachment = 'fixed';
+                    } else if (config.theme.gradient) {
+                        const grad = `radial-gradient(circle at 50% 0%, ${config.theme.gradient.start} 0%, ${config.theme.gradient.end} 80%)`;
+                        document.body.style.backgroundImage = grad;
+                    }
+                }
+
+                if (config.theme.youtubeMusicUrl && config.theme.youtubeMusicUrl.trim() !== '') {
+                    ytVideoId = extractVideoID(config.theme.youtubeMusicUrl);
+                    if (ytVideoId) {
+                        document.getElementById('music-widget').style.display = 'flex';
+                        if (window.YT && window.YT.Player && !ytPlayer) createYoutubePlayer();
+                    }
+                }
+            } catch (e) { console.error("Erro ao carregar config:", e); }
+        }
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', async () => {
+            await applyConfig();
+            loadReviews(); // Carrega da API (Reviews antigas)
+        
+            // --- Lógica Front-end do Login Dinâmico (OAuth2 Implicit Grant) ---
+            const fragment = new URLSearchParams(window.location.hash.slice(1));
+            const hashToken = fragment.get('access_token');
+            if (hashToken) {
+                userAccessToken = hashToken;
+                localStorage.setItem('discord_access_token', userAccessToken);
+                // Limpa o access token visualmente da URL para segurança da experiência
+                window.history.replaceState(null, null, window.location.pathname + window.location.search);
+            }
+
+            // Ativar painel correto
+            if (userAccessToken) {
+                fetchClientDiscordUser();
+            } else {
+                document.getElementById('discord-login-btn').href = `https://discord.com/api/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=token&scope=identify`;
+            }
+
+            // Ler parâmetros da URL (Alimentando o Target User - o Atendente lá no TOPO)
+            const urlParams = new URLSearchParams(window.location.search);
+            const username = urlParams.get('username') || urlParams.get('user');
+            const userId = urlParams.get('id') || urlParams.get('userid');
+            const avatar = urlParams.get('avatar');
+
+            if (avatar) {
+                // Legado: se quiser passar via URL, mas agora o foco é o Card
+            }
+            
+            // Buscar dados completos do Dono para o Card Lateral
+            fetch('/api/user')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        const avatarUrl = data.avatarUrl;
+                        const name = data.username;
+                        const tag = data.tag;
+                        const bio = data.bio;
+                        const id = data.id;
+                        const banner = data.banner;
+                        const accent = data.accentColor;
+                        const flags = data.publicFlags;
+
+                        // Preencher Card
+                        document.getElementById('p-avatar').src = avatarUrl;
+                        document.getElementById('p-name').textContent = name;
+                        document.getElementById('p-tag').textContent = tag;
+                        document.getElementById('p-since').textContent = getMemberSince(id);
+                        
+                        // Tentar puxar Bio Real e Nitro/Boost via Lanyard (API de presença alternativa)
+                        fetch(`https://api.lanyard.rest/v1/users/${data.id}`)
+                            .then(lRes => lRes.json())
+                            .then(lData => {
+                                let hasNitro = data.showNitro;
+                                let hasBoost = data.showBoost;
+
+                                if (lData.success) {
+                                    const u = lData.data.discord_user;
+                                    if (u.bio) document.getElementById('p-bio').innerHTML = linkify(u.bio);
+                                    else document.getElementById('p-bio').innerHTML = linkify(bio || "Nenhuma biografia disponível.");
+                                    
+                                    // Se o premium_type for > 0, o cara tem Nitro
+                                    if (u.premium_type > 0) hasNitro = true;
+                                } else {
+                                    document.getElementById('p-bio').innerHTML = linkify(bio || "Nenhuma biografia disponível.");
+                                }
+
+                                // Badges (Dinamicas + Flags)
+                                const badgesEl = document.getElementById('p-badges');
+                                badgesEl.innerHTML = getDiscordBadges(flags, hasNitro, hasBoost);
+                            })
+                            .catch(() => {
+                                document.getElementById('p-bio').innerHTML = linkify(bio || "Nenhuma biografia disponível.");
+                                const badgesEl = document.getElementById('p-badges');
+                                badgesEl.innerHTML = getDiscordBadges(flags, data.showNitro, data.showBoost);
+                            });
+                        
+                        const bannerEl = document.getElementById('p-banner');
+                        if (banner) {
+                            bannerEl.style.backgroundImage = `url('${banner}')`;
+                            bannerEl.style.backgroundColor = 'transparent';
+                        } else if (accent) {
+                            bannerEl.style.backgroundImage = 'none';
+                            bannerEl.style.backgroundColor = accent;
+                        }
+
+                        // Badges
+                        const badgesEl = document.getElementById('p-badges');
+                        badgesEl.innerHTML = getDiscordBadges(flags, data.showNitro, data.showBoost);
+                    }
+                })
+                .catch(e => console.log("Erro ao carregar card lateral:", e));
+        });
+
+        // Helper: Linkify bio
+        function linkify(text) {
+            const urlRegex = /(https?:\/\/[^\s]+)/g;
+            return text.replace(urlRegex, (url) => `<a href="${url}" target="_blank" style="color: #00a8fc; text-decoration: none;">${url}</a>`);
+        }
+
+        // Helper: Snowflake to Date
+        function getMemberSince(id) {
+            if (!id) return "...";
+            const epoch = 1420070400000;
+            const timestamp = Math.floor(id / 4194304) + epoch;
+            const date = new Date(timestamp);
+            const months = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+            return `${date.getDate()} de ${months[date.getMonth()]} de ${date.getFullYear()}`;
+        }
+
+        // Helper: Discord Flags to Badges HTML
+        // Helper: Discord Flags (Simplificado para mostrar apenas Nitro por desejo do usuario)
+        function getDiscordBadges(flags, showNitro, showBoost) {
+            let html = '';
+            
+            // Exibir apenas Nitro (Dinamico via Lanyard ou Manual via config.json)
+            if (showNitro) {
+                html += `<img src="https://raw.githubusercontent.com/mezotv/discord-badges/main/assets/nitro.svg" class="dc-badge-item">`;
+            }
+            
+            // O usuario pediu para deixar so a badge do nitro. Removendo mapeamento de outras flags.
+            return html;
+        }
+
+        // --- Sistema de Validacao do Reviewer logado ---
+        async function fetchClientDiscordUser() {
+            try {
+                const res = await fetch('https://discord.com/api/v10/users/@me', {
+                    headers: { 'Authorization': `Bearer ${userAccessToken}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    const ext = data.avatar && data.avatar.startsWith("a_") ? "gif" : "png";
+                    const avatarUrl = data.avatar ? `https://cdn.discordapp.com/avatars/${data.id}/${data.avatar}.${ext}?size=128` : "https://cdn.discordapp.com/embed/avatars/0.png";
+                    
+                    document.getElementById('logged-user-avatar').src = avatarUrl;
+                    document.getElementById('logged-user-name').textContent = data.global_name || data.username;
+                    document.getElementById('logged-user-tag').textContent = `@${data.username}`;
+                    loggedUserId = data.id;
+                    
+                    document.getElementById('login-section').style.display = 'none';
+                    document.getElementById('review-section').style.display = 'block';
+                    
+                    renderReviews(); // Re-render para mostrar os botões de apagar caso seja o dono
+                } else {
+                    logout(); // O token deve estar expirado
+                }
+            } catch (e) {
+                console.error("Erro no login dinâmico:", e);
+                logout();
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('discord_access_token');
+            userAccessToken = null;
+            loggedUserId = null;
+            document.getElementById('login-section').style.display = 'block';
+            document.getElementById('review-section').style.display = 'none';
+            document.getElementById('discord-login-btn').href = `https://discord.com/api/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=token&scope=identify`;
+            renderReviews();
+        }
+
+        // --- Função Carregar do JSON ---
+        async function loadReviews() {
+            try {
+                const response = await fetch('/api/reviews');
+                if (response.ok) {
+                    reviews = await response.json();
+                    renderReviews();
+                    updateStats();
+                }
+            } catch (error) {
+                console.error("Erro ao carregar avaliações do JSON:", error);
+                showToast("Dica: você precisa rodar com 'npm start' ou abrir via servidor para que o JSON funcione!");
+            }
+        }
+
+        // --- Função das Estrelas ---
+        function setRating(n) {
+            currentRating = n;
+            document.getElementById('rating-value').value = n;
+            renderStars(n);
+        }
+
+        function hoverRating(n) {
+            renderStars(n);
+        }
+
+        function resetRatingHover() {
+            renderStars(currentRating);
+        }
+
+        function renderStars(n) {
+            const stars = document.querySelectorAll('.star-icon');
+            stars.forEach((star, index) => {
+                if (index < n) {
+                    star.classList.add('active');
+                } else {
+                    star.classList.remove('active');
+                }
+            });
+        }
+
+        // --- Função Enviar Avaliação ---
+        async function submitReview() {
+            try {
+                const textInput = document.getElementById('review-text');
+                const text = textInput.value.trim();
+
+                if (!userAccessToken) {
+                    showToast("Entre usando o botão do Discord!");
+                    logout();
+                    return;
+                }
+                if (currentRating === 0) {
+                    showToast("Selecione uma nota clicando nas estrelas.");
+                    return;
+                }
+                if (!text) {
+                    showToast("Por favor, escreva um comentário.");
+                    textInput.focus();
+                    return;
+                }
+
+                // O Front-end AGORA DEFENDE NOME MENTIDO. O Back vai validar por token!
+                const payload = {
+                    rating: currentRating,
+                    text: text,
+                    accessToken: userAccessToken 
+                };
+
+                const botaoEnvio = document.getElementById('submit-btn');
+                botaoEnvio.textContent = "...";
+                botaoEnvio.disabled = true;
+
+                // Enviar para o servidor local salvar
+                const response = await fetch('/api/reviews', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                botaoEnvio.textContent = "Enviar Avaliação";
+                botaoEnvio.disabled = false;
+
+                if (response.ok) {
+                    const bodyJSON = await response.json();
+                    
+                    // Adicionar ao array local a avaliacao formatada recebida segura
+                    reviews.unshift(bodyJSON.review);
+
+                    // Limpar o formulário
+                    textInput.value = '';
+                    setRating(0); // Reseta estrelas
+
+                    // Atualizar a tela
+                    renderReviews();
+                    updateStats();
+                    showToast("Avaliação publicada!");
+                } else {
+                    const falha = await response.json();
+                    showToast(falha.message || "Erro de segurança ao validar");
+                    if (response.status === 401) logout();
+                }
+
+            } catch (error) {
+                console.error(error);
+                alert("Falha terrível de conexão: " + error.message);
+            }
+        }
+
+        // --- Motor de Animação e Arraste Livres ---
+        let isDown = false; let startX; let scrollLeft;
+        let marqueeAnimationId = null;
+        let marqueeSpeed = 1;
+
+        window.addEventListener('load', () => {
+            const slider = document.getElementById('reviews-container-box');
+            if(!slider) return;
+            slider.addEventListener('mousedown', (e) => {
+                isDown = true; slider.classList.add('active');
+                startX = e.pageX - slider.offsetLeft;
+                scrollLeft = slider.scrollLeft;
+            });
+            slider.addEventListener('mouseleave', () => { isDown = false; slider.classList.remove('active'); slider.isHoveringMarquee = false; });
+            slider.addEventListener('mouseup', () => { isDown = false; slider.classList.remove('active'); });
+            slider.addEventListener('mousemove', (e) => {
+                if(!isDown) return;
+                e.preventDefault();
+                const x = e.pageX - slider.offsetLeft;
+                const walk = (x - startX) * 1.5;
+                slider.scrollLeft = scrollLeft - walk;
+            });
+
+            // Gerencia sistema de pause natural pro mouse
+            slider.addEventListener('mouseenter', () => { slider.isHoveringMarquee = true; });
+        });
+
+        function startJSMarquee() {
+            const container = document.getElementById('reviews-container-box');
+            if (!container) return;
+            if (marqueeAnimationId) cancelAnimationFrame(marqueeAnimationId);
+
+            function step() {
+                if (!container.isHoveringMarquee && !isDown) {
+                    container.scrollLeft += marqueeSpeed;
+                    
+                    // Loop optico infinito lendo o offset da emenda javascript
+                    const halfWidth = container.scrollWidth / 2;
+                    if (container.scrollLeft >= halfWidth) {
+                        container.scrollLeft -= halfWidth; // retorna pro início sem corte
+                    }
+                }
+                marqueeAnimationId = requestAnimationFrame(step);
+            }
+            marqueeAnimationId = requestAnimationFrame(step);
+        }
+
+        function stopJSMarquee() {
+            if (marqueeAnimationId) {
+                cancelAnimationFrame(marqueeAnimationId);
+                marqueeAnimationId = null;
+            }
+        }
+
+        // --- Renderizar Lista (Engine Native Scroll API Mode) ---
+        function renderReviews() {
+            const listContainer = document.getElementById('reviews-list');
+            listContainer.innerHTML = '';
+            
+            const containerBox = document.getElementById('reviews-container-box');
+            if(containerBox) containerBox.scrollLeft = 0;
+            
+            stopJSMarquee();
+
+            if (reviews.length === 0) {
+                listContainer.innerHTML = '<p style="color: #444; text-align: center; font-style: italic; width: 100%;">Nenhuma avaliação ainda.</p>';
+                return;
+            }
+
+            const minReviews = window.appConfig?.theme?.carousel?.minReviewsToAnimate || 5;
+            const shouldAnimate = reviews.length >= minReviews;
+
+
+            // Clona todos os itens exatamente 1 vez para fechar a conta do loop de CSS de -50% translateX sem quebra visual
+            const loops = shouldAnimate ? 2 : 1;
+            
+            for (let i = 0; i < loops; i++) {
+                reviews.forEach(review => {
+                    let starsHtml = '';
+                    for(let star=1; star<=5; star++) {
+                        const fillClass = star <= review.rating ? 'filled' : '';
+                        starsHtml += `<svg class="mini-star ${fillClass}" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>`;
+                    }
+
+                    const urlAvatarSeguro = review.avatar_url || `https://api.dicebear.com/7.x/identicon/svg?seed=${review.username}&backgroundColor=1a1a1a`;
+
+                    let deleteHtml = '';
+                    if (loggedUserId && TARGET_USER_ID && loggedUserId === TARGET_USER_ID && i === 0) {
+                        deleteHtml = `<button onclick="showConfirmModal('${review.id}')" style="margin-left: 10px; background: none; border: none; color: var(--danger-color); font-weight: bold; cursor: pointer; font-size: 1.2rem; line-height: 1;" title="Apagar Avaliação">×</button>`;
+                    }
+
+                    const card = document.createElement('div');
+                    card.className = 'review-card';
+                    card.innerHTML = `
+                        <div class="rev-header">
+                            <div class="rev-user-area">
+                                <img src="${urlAvatarSeguro}" class="rev-avatar" alt="Avatar">
+                                <div>
+                                    <span class="rev-name" style="display:block; line-height: 1.1;">${escapeHtml(review.username)}</span>
+                                    ${review.tag ? `<span style="font-size: 0.75rem; color: #888; display:block; margin-top:2px;">@${escapeHtml(review.tag)}</span>` : ''}
+                                </div>
+                            </div>
+                            <div class="rev-stars" style="margin-left: auto;">${starsHtml}</div>
+                            ${deleteHtml}
+                        </div>
+                        <div class="rev-content">
+                            <p class="rev-text">" ${escapeHtml(review.review_text)} "</p>
+                            <div class="rev-date" style="margin-top: 15px;">${review.display_date}</div>
+                        </div>
+                    `;
+                    listContainer.appendChild(card);
+                });
+            }
+
+            if (shouldAnimate) {
+                let duration = window.appConfig?.theme?.carousel?.speedSeconds || 30;
+                const halfWidth = reviews.length * (260 + 24); // Novo card width (260) + gap (1.5rem = 24px)
+                // pxs/frame para 60fps
+                marqueeSpeed = (halfWidth / duration) / 60;
+                setTimeout(startJSMarquee, 100);
+            }
+        }
+
+        let reviewIdToDelete = null;
+
+        function showConfirmModal(id) {
+            reviewIdToDelete = id;
+            const m = document.getElementById('custom-confirm-modal');
+            m.style.visibility = 'visible';
+            setTimeout(() => m.classList.add('show'), 10);
+        }
+
+        function closeConfirmModal() {
+            const m = document.getElementById('custom-confirm-modal');
+            m.classList.remove('show');
+            setTimeout(() => { m.style.visibility = 'hidden'; reviewIdToDelete = null; }, 200);
+        }
+
+        document.getElementById('btn-confirm-delete').addEventListener('click', () => {
+            if (reviewIdToDelete !== null) {
+                executeDeleteReview(reviewIdToDelete);
+                closeConfirmModal();
+            }
+        });
+
+        // --- Apagar Avaliação ---
+        async function executeDeleteReview(id) {
+            try {
+                const response = await fetch('/api/reviews', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: id, accessToken: userAccessToken })
+                });
+                
+                if (response.ok) {
+                    const idx = reviews.findIndex(r => String(r.id) === String(id));
+                    if (idx !== -1) reviews.splice(idx, 1);
+                    renderReviews();
+                    updateStats();
+                    showToast("Avaliação apagada!");
+                } else {
+                    const data = await response.json();
+                    showToast(data.message || "Erro ao apagar");
+                    if (response.status === 401) logout();
+                }
+            } catch (e) {
+                console.error(e);
+                showToast("Erro de conexão.");
+            }
+        }
+
+        // --- Atualizar Estatísticas ---
+        function updateStats() {
+            const total = reviews.length;
+            const sum = reviews.reduce((acc, curr) => acc + curr.rating, 0);
+            const avg = total > 0 ? (sum / total).toFixed(1) : '0.0';
+
+            document.getElementById('total-count').textContent = total;
+            document.getElementById('avg-score').textContent = avg;
+        }
+
+        // --- Mostrar Mensagem (Toast) ---
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            
+            // Remove a classe depois de 3 segundos
+            setTimeout(() => {
+                t.classList.remove('show');
+            }, 3000);
+        }
+
+        // --- Segurança HTML ---
+        function escapeHtml(text) {
+            if (!text) return text;
+            return text.replace(/[&<>"']/g, m => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            }[m]));
+        }
+    </script>
+</body>
+</html>

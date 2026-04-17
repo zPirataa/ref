@@ -1,0 +1,5 @@
+node_modules
+config.json
+reviews.json
+.vercel
+package-lock.json
