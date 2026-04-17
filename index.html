@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Avaliações - Dark Mode</title>
+    <title>Avaliações</title>
+    <link id="favicon" rel="icon" type="image/x-icon" href="">
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -551,6 +552,11 @@
                 .then(data => {
                     if (data.success) {
                         const avatarUrl = data.avatarUrl;
+                        
+                        // Atualizar favicon dinamicamente
+                        const favicon = document.getElementById('favicon');
+                        if (favicon) favicon.href = avatarUrl;
+
                         const name = data.username;
                         const tag = data.tag;
                         const bio = data.bio;
