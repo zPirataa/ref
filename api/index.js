@@ -3,7 +3,10 @@ const fs = require('fs');
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
 
-const CONFIG_FILE = path.join(__dirname, 'config.json');
+const CONFIG_FILE = fs.existsSync(path.join(__dirname, 'config.json')) 
+    ? path.join(__dirname, 'config.json') 
+    : path.join(__dirname, '..', 'config.json');
+
 let configGlobal = {
     server: { port: 3000 },
     rateLimit: { enabled: false, timeMs: 300000 },
