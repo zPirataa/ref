@@ -39,56 +39,57 @@ const PORT = process.env.PORT || configGlobal.server?.port || 3000;
 
 // O Handler principal compatível com Vercel e Local
 const handler = async (req, res) => {
-    // CORS simplificado
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    try {
+        // CORS simplificado
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-    if (req.method === 'OPTIONS') {
-        res.writeHead(200);
-        res.end();
-        return;
-    }
-
-    // Servir a página principal HTML
-    if (req.method === 'GET' && (req.url === '/' || req.url === '/index.html' || req.url.startsWith('/?'))) {
-        const indexPath = fs.existsSync(path.join(__dirname, 'index.html'))
-            ? path.join(__dirname, 'index.html')
-            : path.join(__dirname, '..', 'index.html');
-
-        fs.readFile(indexPath, (err, content) => {
-            if (err) {
-                res.writeHead(500);
-                res.end('Erro ao carregar o arquivo index.html no servidor.');
-            } else {
-                res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-                res.end(content, 'utf-8');
-            }
-        });
-    } 
-    // Rota GET: Resgatar as configurações estéticas e não sensíveis para o Front
-    else if (req.method === 'GET' && req.url.includes('/api/config')) {
-        const clientSafeConfig = {
-            clientId: clientId,
-            targetUserId: targetUserId,
-            theme: configGlobal.theme || {}
-        };
-        
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify(clientSafeConfig));
-    }
-    // Rota GET: Buscar a foto/nome atualizados do criador direto no Discord
-    else if (req.method === 'GET' && req.url.includes('/api/user')) {
-        if (!botToken || !targetUserId) {
+        if (req.method === 'OPTIONS') {
             res.writeHead(200);
-            return res.end(JSON.stringify({ success: false, message: 'Configurações do Discord ausentes nas Env Vars.' }));
+            res.end();
+            return;
         }
 
-        fetch(`https://discord.com/api/v10/users/${targetUserId}`, {
-            headers: { "Authorization": `Bot ${botToken.trim()}` }
-        })
-        .then(res => res.json())
-        .then(data => {
+        // Servir a página principal HTML
+        if (req.method === 'GET' && (req.url === '/' || req.url === '/index.html' || req.url.includes('?'))) {
+            const indexPath = fs.existsSync(path.join(__dirname, 'index.html'))
+                ? path.join(__dirname, 'index.html')
+                : path.join(__dirname, '..', 'index.html');
+
+            fs.readFile(indexPath, (err, content) => {
+                if (err) {
+                    res.writeHead(500);
+                    res.end('Erro ao carregar o arquivo index.html no servidor.');
+                } else {
+                    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+                    res.end(content, 'utf-8');
+                }
+            });
+        } 
+        // Rota GET: Resgatar as configurações estéticas e não sensíveis para o Front
+        else if (req.method === 'GET' && req.url.includes('/api/config')) {
+            const clientSafeConfig = {
+                clientId: clientId,
+                targetUserId: targetUserId,
+                theme: configGlobal.theme || {}
+            };
+            
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(clientSafeConfig));
+        }
+        // Rota GET: Buscar a foto/nome atualizados do criador direto no Discord
+        else if (req.method === 'GET' && req.url.includes('/api/user')) {
+            if (!botToken || !targetUserId) {
+                res.writeHead(200);
+                return res.end(JSON.stringify({ success: false, message: 'Configurações do Discord ausentes nas Env Vars.' }));
+            }
+
+            const response = await fetch(`https://discord.com/api/v10/users/${targetUserId}`, {
+                headers: { "Authorization": `Bot ${botToken.trim()}` }
+            });
+            const data = await response.json();
+
             if (data.id) {
                 let avatarUrl = "https://cdn.discordapp.com/embed/avatars/0.png";
                 if (data.avatar) {
@@ -96,11 +97,9 @@ const handler = async (req, res) => {
                     avatarUrl = `https://cdn.discordapp.com/avatars/${targetUserId}/${data.avatar}.${ext}?size=1024`;
                 }
                 res.writeHead(200, { 'Content-Type': 'application/json' });
-                // Mostra o nome de exibição no título, e a tag oficial (ex: @zsnoow) no subtítulo
                 const displayName = data.global_name || data.username;
                 const tag = "@" + data.username;
-                
-                const profile = configGlobal.discord.profile || {};
+                const profile = configGlobal.discord?.profile || {};
                 
                 res.end(JSON.stringify({ 
                     success: true, 
@@ -119,88 +118,83 @@ const handler = async (req, res) => {
                 res.writeHead(404);
                 res.end(JSON.stringify({ success: false }));
             }
-        })
-        .catch(err => {
-            console.error("Discord API Fetch Error:", err.message);
-            res.writeHead(200); // Retorna 200 com erro no JSON para não quebrar a Vercel
-            res.end(JSON.stringify({ success: false, error: 'Erro de conexão com Discord', details: err.message }));
-        });
-    } 
-    // Rota GET: Retornar todos os itens do Supabase
-    else if (req.method === 'GET' && req.url.includes('/api/reviews')) {
-        if (!supabase) {
-            res.writeHead(200, { 'Content-Type': 'application/json' });
-            return res.end(JSON.stringify([]));
-        }
-
-        supabase.from('reviews').select('*').order('id', { ascending: false })
-            .then(({ data, error }) => {
-                if (error) {
-                    res.writeHead(500);
-                    res.end(JSON.stringify({ success: false, error: error.message }));
-                } else {
-                    res.writeHead(200, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify(data || []));
-                }
-            })
-            .catch(err => {
+        } 
+        // Rota GET: Retornar todos os itens do Supabase
+        else if (req.method === 'GET' && req.url.includes('/api/reviews')) {
+            if (!supabase) {
                 res.writeHead(200, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify([]));
-            });
-    } 
-    // Rota POST: Salvar nova avaliação validando pelo Token do Discord
-    else if (req.method === 'POST' && req.url.includes('/api/reviews')) {
-        let body = '';
-        req.on('data', chunk => {
-            body += chunk.toString();
-        });
-        req.on('end', async () => {
-            try {
-                const payload = JSON.parse(body);
-                
-                if (!payload.accessToken || !payload.text || !payload.rating) {
-                    res.writeHead(400);
-                    return res.end(JSON.stringify({ success: false, message: 'Dados inválidos ou sessão expirada.' }));
-                }
-
-                // Autenticar Token temporário (OAuth2 Implicit) para pegar dados reais da pessoa q tá escrevendo
-                const discordRes = await fetch('https://discord.com/api/v10/users/@me', {
-                    headers: { "Authorization": `Bearer ${payload.accessToken}` }
-                });
-
-                if (!discordRes.ok) {
-                    res.writeHead(401);
-                    return res.end(JSON.stringify({ success: false, message: 'Token de autenticação inválido ou expirado. Faça o login de novo!' }));
-                }
-
-                const discordUser = await discordRes.json();
-                
-                const avatarExt = discordUser.avatar && discordUser.avatar.startsWith("a_") ? "gif" : "png";
-                const userAvatarUrl = discordUser.avatar ? `https://cdn.discordapp.com/avatars/${discordUser.id}/${discordUser.avatar}.${avatarExt}?size=256` : "https://cdn.discordapp.com/embed/avatars/0.png";
-
-                // Inserir nova avaliação no Supabase
-                const { data: dbData, error: dbError } = await supabase.from('reviews').insert([{
-                    username: discordUser.global_name || discordUser.username,
-                    tag: discordUser.username,
-                    user_id: discordUser.id,
-                    avatar_url: userAvatarUrl,
-                    rating: payload.rating,
-                    review_text: payload.text,
-                    display_date: new Date().toLocaleDateString('pt-BR') + ' - ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-                }]).select();
-
-                if (dbError) throw dbError;
-                
-                res.writeHead(200, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ success: true, message: 'Avaliação salva com sucesso!', review: dbData[0] }));
-
-            } catch (err) {
-                console.error("Erro ao salvar avaliação:", err);
-                res.writeHead(500);
-                res.end(JSON.stringify({ success: false, message: 'Erro interno ao salvar avaliação.' }));
+                return res.end(JSON.stringify([]));
             }
-        });
-    } 
+
+            const { data, error } = await supabase.from('reviews').select('*').order('id', { ascending: false });
+            if (error) {
+                res.writeHead(500);
+                res.end(JSON.stringify({ success: false, error: error.message }));
+            } else {
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify(data || []));
+            }
+        } 
+        // Rota POST: Salvar nova avaliação validando pelo Token do Discord
+        else if (req.method === 'POST' && req.url.includes('/api/reviews')) {
+            let body = '';
+            req.on('data', chunk => { body += chunk.toString(); });
+            req.on('end', async () => {
+                try {
+                    const payload = JSON.parse(body);
+                    if (!payload.accessToken || !payload.text || !payload.rating) {
+                        res.writeHead(400);
+                        return res.end(JSON.stringify({ success: false, message: 'Dados inválidos ou sessão expirada.' }));
+                    }
+
+                    const discordRes = await fetch('https://discord.com/api/v10/users/@me', {
+                        headers: { "Authorization": `Bearer ${payload.accessToken}` }
+                    });
+
+                    if (!discordRes.ok) {
+                        res.writeHead(401);
+                        return res.end(JSON.stringify({ success: false, message: 'Token de autenticação inválido ou expirado. Faça o login de novo!' }));
+                    }
+
+                    const discordUser = await discordRes.json();
+                    const avatarExt = discordUser.avatar && discordUser.avatar.startsWith("a_") ? "gif" : "png";
+                    const userAvatarUrl = discordUser.avatar ? `https://cdn.discordapp.com/avatars/${discordUser.id}/${discordUser.avatar}.${avatarExt}?size=256` : "https://cdn.discordapp.com/embed/avatars/0.png";
+
+                    const { data: dbData, error: dbError } = await supabase.from('reviews').insert([{
+                        username: discordUser.global_name || discordUser.username,
+                        tag: discordUser.username,
+                        user_id: discordUser.id,
+                        avatar_url: userAvatarUrl,
+                        rating: payload.rating,
+                        review_text: payload.text,
+                        display_date: new Date().toLocaleDateString('pt-BR') + ' - ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+                    }]).select();
+
+                    if (dbError) throw dbError;
+                    
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: true, message: 'Avaliação salva com sucesso!', review: dbData[0] }));
+                } catch (err) {
+                    res.writeHead(500);
+                    res.end(JSON.stringify({ success: false, error: 'Erro ao salvar revisão' }));
+                }
+            });
+        }
+        else {
+            res.writeHead(404);
+            res.end(JSON.stringify({ error: 'Endpoint não encontrado', url: req.url }));
+        }
+    } catch (err) {
+        console.error("Vercel Runtime Error:", err);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ 
+            success: false, 
+            error: 'Erro crítico na execução da função', 
+            details: err.message,
+            stack: err.stack 
+        }));
+    }
+};
     // Rota DELETE: Apagar avaliação (somente o Dono)
     else if (req.method === 'DELETE' && req.url === '/api/reviews') {
         let body = '';
