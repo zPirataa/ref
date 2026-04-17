@@ -19,11 +19,11 @@ try {
 }
 
 // Inicialização do Supabase (Prioriza env vars para Vercel, fallback para config.json)
-const supabaseUrl = process.env.SUPABASE_URL || configGlobal.supabaseUrl;
-const supabaseKey = process.env.SUPABASE_KEY || configGlobal.supabaseKey;
-const botToken = process.env.BOT_TOKEN || configGlobal.discord.botToken;
-const targetUserId = process.env.TARGET_USER_ID || configGlobal.discord.targetUserId;
-const clientId = process.env.CLIENT_ID || configGlobal.discord.clientId;
+const supabaseUrl = process.env.SUPABASE_URL || process.env.supabaseUrl || configGlobal.supabaseUrl;
+const supabaseKey = process.env.SUPABASE_KEY || process.env.supabaseKey || configGlobal.supabaseKey;
+const botToken = process.env.BOT_TOKEN || process.env.botToken || configGlobal.discord.botToken;
+const targetUserId = process.env.TARGET_USER_ID || process.env.targetUserId || configGlobal.discord.targetUserId;
+const clientId = process.env.CLIENT_ID || process.env.clientId || configGlobal.discord.clientId;
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
