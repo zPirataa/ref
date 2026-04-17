@@ -3,32 +3,35 @@ const fs = require('fs');
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
 
-const CONFIG_FILE = fs.existsSync(path.join(__dirname, 'config.json')) 
-    ? path.join(__dirname, 'config.json') 
-    : path.join(__dirname, '..', 'config.json');
-
+// Definir o caminho do config.json (Pode estar na pasta raiz ou na pasta api)
 let configGlobal = {
-    server: { port: 3000 },
-    rateLimit: { enabled: false, timeMs: 300000 },
     discord: { clientId: "", botToken: "", targetUserId: "" },
     supabaseUrl: "",
     supabaseKey: ""
 };
 
 try {
-    if (fs.existsSync(CONFIG_FILE)) {
-        configGlobal = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
+    const pathsToTry = [
+        path.join(__dirname, 'config.json'),
+        path.join(__dirname, '..', 'config.json')
+    ];
+    for (const p of pathsToTry) {
+        if (fs.existsSync(p)) {
+            const data = JSON.parse(fs.readFileSync(p, 'utf8'));
+            configGlobal = { ...configGlobal, ...data };
+            break;
+        }
     }
 } catch (e) {
-    console.log("Aviso: Config.json não encontrado ou inválido. Usando variáveis de ambiente.");
+    console.log("Config local não carregado. Usando ambiente.");
 }
 
-// Inicialização do Supabase (Prioriza env vars para Vercel, fallback para config.json)
+// Configurações finais (Vercel env vars primeiro)
 const supabaseUrl = process.env.SUPABASE_URL || process.env.supabaseUrl || configGlobal.supabaseUrl;
 const supabaseKey = process.env.SUPABASE_KEY || process.env.supabaseKey || configGlobal.supabaseKey;
-const botToken = process.env.BOT_TOKEN || process.env.botToken || configGlobal.discord.botToken;
-const targetUserId = process.env.TARGET_USER_ID || process.env.targetUserId || configGlobal.discord.targetUserId;
-const clientId = process.env.CLIENT_ID || process.env.clientId || configGlobal.discord.clientId;
+const botToken = process.env.BOT_TOKEN || process.env.botToken || configGlobal.discord?.botToken;
+const targetUserId = process.env.TARGET_USER_ID || process.env.targetUserId || configGlobal.discord?.targetUserId;
+const clientId = process.env.CLIENT_ID || process.env.clientId || configGlobal.discord?.clientId;
 
 const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
 
