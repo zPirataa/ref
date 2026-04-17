@@ -67,7 +67,7 @@ const handler = async (req, res) => {
         });
     } 
     // Rota GET: Resgatar as configurações estéticas e não sensíveis para o Front
-    else if (req.method === 'GET' && req.url === '/api/config') {
+    else if (req.method === 'GET' && req.url.includes('/api/config')) {
         const clientSafeConfig = {
             clientId: clientId,
             targetUserId: targetUserId,
@@ -78,9 +78,14 @@ const handler = async (req, res) => {
         res.end(JSON.stringify(clientSafeConfig));
     }
     // Rota GET: Buscar a foto/nome atualizados do criador direto no Discord
-    else if (req.method === 'GET' && req.url === '/api/user') {
+    else if (req.method === 'GET' && req.url.includes('/api/user')) {
+        if (!botToken || !targetUserId) {
+            res.writeHead(200);
+            return res.end(JSON.stringify({ success: false, message: 'Configurações do Discord ausentes nas Env Vars.' }));
+        }
+
         fetch(`https://discord.com/api/v10/users/${targetUserId}`, {
-            headers: { "Authorization": `Bot ${botToken}` }
+            headers: { "Authorization": `Bot ${botToken.trim()}` }
         })
         .then(res => res.json())
         .then(data => {
@@ -116,13 +121,13 @@ const handler = async (req, res) => {
             }
         })
         .catch(err => {
-            console.error("Discord API Error:", err);
-            res.writeHead(500);
-            res.end(JSON.stringify({ success: false, error: 'Erro ao conectar no Discord' }));
+            console.error("Discord API Fetch Error:", err.message);
+            res.writeHead(200); // Retorna 200 com erro no JSON para não quebrar a Vercel
+            res.end(JSON.stringify({ success: false, error: 'Erro de conexão com Discord', details: err.message }));
         });
     } 
     // Rota GET: Retornar todos os itens do Supabase
-    else if (req.method === 'GET' && req.url === '/api/reviews') {
+    else if (req.method === 'GET' && req.url.includes('/api/reviews')) {
         if (!supabase) {
             res.writeHead(200, { 'Content-Type': 'application/json' });
             return res.end(JSON.stringify([]));
@@ -144,7 +149,7 @@ const handler = async (req, res) => {
             });
     } 
     // Rota POST: Salvar nova avaliação validando pelo Token do Discord
-    else if (req.method === 'POST' && req.url === '/api/reviews') {
+    else if (req.method === 'POST' && req.url.includes('/api/reviews')) {
         let body = '';
         req.on('data', chunk => {
             body += chunk.toString();
