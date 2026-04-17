@@ -51,11 +51,15 @@ const handler = async (req, res) => {
     }
 
     // Servir a página principal HTML
-    if (req.method === 'GET' && (req.url === '/' || req.url.startsWith('/?'))) {
-        fs.readFile(path.join(__dirname, 'index.html'), (err, content) => {
+    if (req.method === 'GET' && (req.url === '/' || req.url === '/index.html' || req.url.startsWith('/?'))) {
+        const indexPath = fs.existsSync(path.join(__dirname, 'index.html'))
+            ? path.join(__dirname, 'index.html')
+            : path.join(__dirname, '..', 'index.html');
+
+        fs.readFile(indexPath, (err, content) => {
             if (err) {
                 res.writeHead(500);
-                res.end('Erro ao carregar o arquivo index.html');
+                res.end('Erro ao carregar o arquivo index.html no servidor.');
             } else {
                 res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
                 res.end(content, 'utf-8');
@@ -119,6 +123,11 @@ const handler = async (req, res) => {
     } 
     // Rota GET: Retornar todos os itens do Supabase
     else if (req.method === 'GET' && req.url === '/api/reviews') {
+        if (!supabase) {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify([]));
+        }
+
         supabase.from('reviews').select('*').order('id', { ascending: false })
             .then(({ data, error }) => {
                 if (error) {
@@ -126,8 +135,12 @@ const handler = async (req, res) => {
                     res.end(JSON.stringify({ success: false, error: error.message }));
                 } else {
                     res.writeHead(200, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify(data));
+                    res.end(JSON.stringify(data || []));
                 }
+            })
+            .catch(err => {
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify([]));
             });
     } 
     // Rota POST: Salvar nova avaliação validando pelo Token do Discord
