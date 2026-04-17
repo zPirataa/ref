@@ -7,7 +7,8 @@ const { createClient } = require('@supabase/supabase-js');
 let configGlobal = {
     discord: { clientId: "", botToken: "", targetUserId: "" },
     supabaseUrl: "",
-    supabaseKey: ""
+    supabaseKey: "",
+    rateLimit: { enabled: false, timeMs: 300000 }
 };
 
 try {
@@ -147,6 +148,34 @@ const handler = async (req, res) => {
                         return res.end(JSON.stringify({ success: false, message: 'Sessão expirada.' }));
                     }
                     const discordUser = await discordRes.json();
+
+                    // Lógica de Rate Limit (verificar última avaliação no Supabase)
+                    if (configGlobal.rateLimit?.enabled) {
+                        const { data: lastReview } = await supabase
+                            .from('reviews')
+                            .select('created_at')
+                            .eq('user_id', discordUser.id)
+                            .order('id', { ascending: false })
+                            .limit(1)
+                            .single();
+
+                        if (lastReview) {
+                            const lastTime = new Date(lastReview.created_at).getTime();
+                            const now = new Date().getTime();
+                            const diff = now - lastTime;
+                            const limit = configGlobal.rateLimit.timeMs || 300000;
+
+                            if (diff < limit) {
+                                const minutesLeft = Math.ceil((limit - diff) / 60000);
+                                res.writeHead(429);
+                                return res.end(JSON.stringify({ 
+                                    success: false, 
+                                    message: `Você já enviou uma avaliação recentemente. Tente novamente em ${minutesLeft} minuto(s).` 
+                                }));
+                            }
+                        }
+                    }
+
                     const avatarExt = discordUser.avatar && discordUser.avatar.startsWith("a_") ? "gif" : "png";
                     const userAvatarUrl = discordUser.avatar ? `https://cdn.discordapp.com/avatars/${discordUser.id}/${discordUser.avatar}.${avatarExt}?size=256` : "https://cdn.discordapp.com/embed/avatars/0.png";
 
