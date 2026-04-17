@@ -8,7 +8,7 @@ let configGlobal = {
     discord: { clientId: "", botToken: "", targetUserId: "" },
     supabaseUrl: "",
     supabaseKey: "",
-    rateLimit: { enabled: false, timeMs: 300000 }
+    rateLimit: { enabled: true, timeMs: 300000 }
 };
 
 try {
